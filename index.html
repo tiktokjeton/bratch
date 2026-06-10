@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bgl_</title>
+    <style>
+        /* Neon/Yağışlı Fonlar və Ümumi Dizayn */
+        :root { --primary: #0095f6; --bg: #000; --panel: #121212; --text: #fff; }
+        body { background: #000; color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; }
+        .neon-bg { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); }
+
+        /* Giriş Ekranı */
+        #auth-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .auth-input { width: 85%; max-width: 300px; padding: 12px; margin: 5px; border-radius: 8px; border: 1px solid #333; background: #222; color: #fff; }
+        
+        /* Çat Görünüşü */
+        #chat-screen { display: none; flex-direction: column; height: 100vh; background: var(--bg); }
+        .msg-line { display: flex; padding: 5px 10px; }
+        .msg-line.me { justify-content: flex-end; }
+        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 75%; font-size: 14px; background: #262626; }
+        .msg-line.me .bubble { background: var(--primary); }
+        
+        /* Aşağı menyu */
+        #bottom-nav { height: 60px; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; background: #000; }
+        .nav-btn { background: none; border: none; color: white; font-size: 24px; }
+    </style>
+</head>
+<body class="neon-bg">
+
+    <div id="auth-screen">
+        <h1 style="color:var(--primary)">Bgl_</h1>
+        <input type="text" id="u" class="auth-input" placeholder="İstifadəçi adı">
+        <input type="password" id="p" class="auth-input" placeholder="Şifrə">
+        <button onclick="login()" style="width:85%; max-width:300px; padding:12px; background:var(--primary); border:none; color:white; border-radius:8px;">Daxil Ol / Qeydiyyat</button>
+    </div>
+
+    <div id="main-ui" style="display:none; flex:1; overflow-y:auto;">
+        <h2 style="padding:15px">İstifadəçilər</h2>
+        <div id="user-list"></div>
+    </div>
+
+    <div id="chat-screen">
+        <div style="padding:15px; border-bottom:1px solid #333; display:flex; gap:10px;">
+            <button onclick="document.getElementById('chat-screen').style.display='none'">←</button>
+            <span id="target-name"></span>
+        </div>
+        <div id="typing" style="font-size:10px; color:var(--primary); padding-left:15px;"></div>
+        <div id="messages" style="flex:1; overflow-y:auto; padding:10px;"></div>
+        <div style="padding:10px; display:flex; gap:5px;">
+            <input type="text" id="m-in" style="flex:1; border-radius:20px; padding:10px; background:#222; border:none; color:white;">
+            <button onclick="sendMsg()">➔</button>
+        </div>
+    </div>
+
+    <div id="bottom-nav">
+        <button class="nav-btn" onclick="alert('Axtarış')">🔍</button>
+        <button class="nav-btn" onclick="alert('Profil')">👤</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const socket = io("https://bratch.onrender.com");
+        let myName = localStorage.getItem('bgl_user');
+        let target = "";
+
+        if(myName) document.getElementById('auth-screen').style.display = 'none';
+
+        function login() {
+            myName = document.getElementById('u').value;
+            localStorage.setItem('bgl_user', myName);
+            socket.emit('auth', {type:'login', username: myName, password: document.getElementById('p').value});
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'block';
+        }
+
+        function openChat(t) {
+            target = t;
+            document.getElementById('target-name').innerText = t;
+            document.getElementById('chat-screen').style.display = 'flex';
+        }
+
+        function sendMsg() {
+            const txt = document.getElementById('m-in').value;
+            socket.emit('private_message', {to: target, text: txt, fileType: 'text'});
+            document.getElementById('m-in').value = '';
+        }
+
+        socket.on('msg_receive', (msg) => {
+            const div = document.createElement('div');
+            div.className = msg.from === myName ? 'msg-line me' : 'msg-line';
+            div.innerHTML = `<div class="bubble">${msg.text}</div>`;
+            document.getElementById('messages').appendChild(div);
+        });
+    </script>
+</body>
+</html>
