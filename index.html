@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bgl_</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: '-apple-system', BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        body { background-color: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* GİRİŞ və QEYDİYYAT EKRANI */
+        #auth-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:10000; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:25px; }
+        .logo { font-size: 42px; font-weight: bold; font-style: italic; letter-spacing: -1px; margin-bottom: 30px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .auth-input { width: 100%; max-width: 320px; padding: 14px; background: #121212; border: 1px solid #262626; border-radius: 8px; color: #fff; margin-bottom: 12px; font-size: 14px; outline: none; }
+        .auth-btn { width: 100%; max-width: 320px; padding: 14px; background: #0095f6; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .toggle-auth { margin-top: 20px; color: #a8a8a8; font-size: 13px; cursor: pointer; }
+
+        /* ƏSAS INTERFEYS */
+        #app-header { height: 50px; border-bottom: 1px solid #262626; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; font-size: 22px; font-weight: bold; font-style: italic; }
+        #main-container { flex: 1; overflow-y: auto; display: block; padding-bottom: 65px; }
+
+        /* İSTİFADƏÇİ SİYAHISI (Axtarış Ekranı) */
+        .user-card { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; border-bottom: 1px solid #121212; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background: #262626; object-fit: cover; border: 1px solid #333; }
+        .user-details .username { font-weight: bold; font-size: 14px; font-style: normal; }
+        .user-details .sub { font-size: 12px; color: #a8a8a8; }
+        .action-btns { display: flex; gap: 8px; }
+        .follow-btn { padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        .follow-btn.get { background: #0095f6; color: #fff; }
+        .follow-btn.ing { background: #262626; color: #fff; }
+        .chat-open-btn { background: #fff; color: #000; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+
+        /* ÖZƏL CHAT EKRANI (Açılarkən hər şeyin önünə keçir) */
+        #chat-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: none; flex-direction: column; }
+        #chat-header { height: 55px; border-bottom: 1px solid #262626; display: flex; align-items: center; padding: 0 15px; gap: 15px; }
+        #chat-back { font-size: 24px; cursor: pointer; }
+        #chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* Mesaj Balonları (Instagram Tipli) */
+        .msg-line { display: flex; width: 100%; }
+        .msg-line.me { justify-content: flex-end; }
+        .msg-line.other { justify-content: flex-start; }
+        .bubble { padding: 10px 16px; border-radius: 20px; max-width: 70%; font-size: 14px; word-break: break-word; line-height: 1.4; }
+        .msg-line.me .bubble { background: #3797f0; color: #fff; border-bottom-right-radius: 4px; }
+        .msg-line.other .bubble { background: #262626; color: #fff; border-bottom-left-radius: 4px; }
+        .bubble img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        .bubble audio { max-width: 100%; margin-top: 5px; }
+
+        /* Chat Giriş Bölməsi */
+        #chat-input-bar { padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #262626; background: #000; }
+        #msg-input { flex: 1; padding: 12px 18px; background: #121212; border: 1px solid #262626; border-radius: 25px; color: #fff; outline: none; font-size: 14px; }
+        .media-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; }
+        #send-btn { background: none; border: none; color: #0095f6; font-size: 16px; font-weight: bold; cursor: pointer; display: none; }
+
+        /* PROFİL EKRANI */
+        #profile-screen { padding: 20px; display: none; text-align: center; }
+        .profile-avatar-container { position: relative; width: 100px; height: 100px; margin: 0 auto 15px; }
+        .profile-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #262626; }
+        .avatar-edit-label { position: absolute; bottom: 0; right: 0; background: #0095f6; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+        
+        /* AŞAĞI MENYU (NAVBAR) */
+        #bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #000; border-top: 1px solid #262626; display: flex; justify-content: space-around; align-items: center; z-index: 400; }
+        .nav-item { background: none; border: none; color: #a8a8a8; font-size: 22px; cursor: pointer; }
+        .nav-item.active { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="logo">Bgl_</div>
+        <input type="text" id="auth-user" class="auth-input" placeholder="İstifadəçi adı...">
+        <input type="password" id="auth-pass" class="auth-input" placeholder="Şifrə...">
+        <button id="auth-main-btn" class="auth-btn">Giriş Et</button>
+        <div id="auth-toggle" class="toggle-auth">Hesabın yoxdur? Qeydiyyatdan keç</div>
+    </div>
+
+    <div id="app-header">Bgl_</div>
+
+    <div id="main-container">
+        <div id="users-screen"></div>
+
+        <div id="profile-screen">
+            <div class="profile-avatar-container">
+                <img id="my-profile-img" class="profile-avatar" src="">
+                <label for="avatar-upload" class="avatar-edit-label">+</label>
+                <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+            </div>
+            <h2 id="my-profile-name" style="margin-bottom: 20px;">İstifadəçi</h2>
+            <p style="color: #a8a8a8;">Bgl_ dünyasına xoş gəldin, brat!</p>
+        </div>
+    </div>
+
+    <div id="chat-screen">
+        <div id="chat-header">
+            <span id="chat-back">🡠</span>
+            <img id="chat-target-avatar" class="avatar" src="" style="width:35px; height:35px;">
+            <span id="chat-target-name" style="font-weight: bold;">Ad</span>
+        </div>
+        <div id="chat-messages"></div>
+        <div id="chat-input-bar">
+            <label for="img-file-input" class="media-btn">📷</label>
+            <input type="file" id="img-file-input" accept="image/*" style="display:none;">
+
+            <button id="audio-rec-btn" class="media-btn">🎙️</button>
+
+            <input type="text" id="msg-input" placeholder="Mesaj yaz..." autocomplete="off">
+            <button id="send-btn">Göndər</button>
+        </div>
+    </div>
+
+    <div id="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('search')">🔍</button>
+        <button class="nav-item" onclick="switchTab('profile')">👤</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const SERVER_URL = "https://bratch.onrender.com"; 
+        const socket = io(SERVER_URL);
+
+        let myName = "";
+        let currentChatTarget = "";
+        let authType = "login"; // login və ya register
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Elementlər
+        const authScreen = document.getElementById("auth-screen");
+        const authUser = document.getElementById("auth-user");
+        const authPass = document.getElementById("auth-pass");
+        const authMainBtn = document.getElementById("auth-main-btn");
+        const authToggle = document.getElementById("auth-toggle");
+        const usersScreen = document.getElementById("users-screen");
+        const profileScreen = document.getElementById("profile-screen");
+        const chatScreen = document.getElementById("chat-screen");
+        const chatTargetName = document.getElementById("chat-target-name");
+        const chatTargetAvatar = document.getElementById("chat-target-avatar");
+        const chatMessages = document.getElementById("chat-messages");
+        const msgInput = document.getElementById("msg-input");
+        const sendBtn = document.getElementById("send-btn");
+        const imgFileInput = document.getElementById("img-file-input");
+        const audioRecBtn = document.getElementById("audio-rec-btn");
+
+        // 1. GİRİŞ / QEYDİYYAT MƏNTİQİ
+        authToggle.onclick = () => {
+            if(authType === "login") {
+                authType = "register";
+                authMainBtn.innerText = "Qeydiyyatı Tamamla";
+                authToggle.innerText = "Hesabın var? Giriş et";
+            } else {
+                authType = "login";
+                authMainBtn.innerText = "Giriş Et";
+                authToggle.innerText = "Hesabın yoxdur? Qeydiyyatdan keç";
+            }
+        };
+
+        authMainBtn.onclick = () => {
+            const username = authUser.value.trim().toLowerCase();
+            const password = authPass.value.trim();
+            if(username && password) {
+                socket.emit('auth', { type: authType, username, password });
+            }
+        };
+
+        socket.on('auth_response', (res) => {
+            alert(res.message);
+            if(res.success) {
+                myName = res.username;
+                authScreen.style.display = "none";
+                document.getElementById("my-profile-name").innerText = myName;
+                socket.emit('get_users');
+            }
+        });
+
+        // 2. TAB KONTROLU (Axtarış və Profil keçidi)
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            if(tab === 'search') {
+                document.querySelectorAll('.nav-item')[0].classList.add('active');
+                usersScreen.style.display = "block";
+                profileScreen.style.display = "none";
+                socket.emit('get_users');
+            } else {
+                document.querySelectorAll('.nav-item')[1].classList.add('active');
+                usersScreen.style.display = "none";
+                profileScreen.style.display = "block";
+            }
+        }
+
+        // 3. İSTİFADƏÇİ SİYAHISINI EKUNDA GÖSTƏRMƏK
+        socket.on('user_list', (list) => {
+            usersScreen.innerHTML = "";
+            list.forEach(user => {
+                if(user.username === myName) {
+                    if(user.avatar) document.getElementById("my-profile-img").src = user.avatar;
+                    return;
+                }
+
+                const card = document.createElement("div");
+                card.className = "user-card";
+
+                const imgSrc = user.avatar || "https://www.w3schools.com/howto/img_avatar.png";
+                const followText = user.isFollowing ? "Following" : "Follow";
+                const followClass = user.isFollowing ? "follow-btn ing" : "follow-btn get";
+
+                card.innerHTML = `
+                    <div class="user-info">
+                        <img class="avatar" src="${imgSrc}">
+                        <div class="user-details">
+                            <div class="username">${user.username}</div>
+                            <div class="sub">${user.followersCount} followers</div>
+                        </div>
+                    </div>
+                    <div class="action-btns">
+                        <button class="${followClass}" onclick="socket.emit('follow_user', '${user.username}')">${followText}</button>
+                        <button class="chat-open-btn" onclick="openChat('${user.username}', '${imgSrc}')">Mesaj</button>
+                    </div>
+                `;
+                usersScreen.appendChild(card);
+            });
+        });
+
+        socket.on('refresh_data', () => { socket.emit('get_users'); });
+
+        // 4. CHAT AÇMAQ
+        function openChat(target, avatarUrl) {
+            currentChatTarget = target;
+            chatTargetName.innerText = target;
+            chatTargetAvatar.src = avatarUrl;
+            chatMessages.innerHTML = "";
+            chatScreen.style.display = "flex";
+        }
+
+        document.getElementById("chat-back").onclick = () => {
+            chatScreen.style.display = "none";
+            currentChatTarget = "";
+        };
+
+        // Giriş sahəsində yazı yazılanda düymə çıxsın
+        msgInput.oninput = () => {
+            sendBtn.style.display = msgInput.value.trim() ? "block" : "none";
+        };
+
+        // Mesaj göndərmək
+        function sendTextMessage() {
+            const text = msgInput.value.trim();
+            if(text && currentChatTarget) {
+                socket.emit('private_message', { to: currentChatTarget, text: text, fileType: 'text' });
+                msgInput.value = "";
+                sendBtn.style.display = "none";
+            }
+        }
+        sendBtn.onclick = sendTextMessage;
+        msgInput.onkeydown = (e) => { if(e.key === "Enter") sendTextMessage(); };
+
+        // 5. MESAJI QƏBUL ETMƏK VƏ GÖSTƏRMƏK (Şəkil və Səs daxil)
+        socket.on('msg_receive', (msg) => {
+            // Mesaj bizim hazırda açıq olan çata aiddirsə ekranda göstər
+            if ((msg.from === myName && msg.to === currentChatTarget) || (msg.from === currentChatTarget && msg.to === myName)) {
+                const line = document.createElement("div");
+                const isMe = msg.from === myName;
+                line.className = isMe ? "msg-line me" : "msg-line other";
+
+                let content = "";
+                if(msg.fileType === 'text') {
+                    content = msg.text;
+                } else if(msg.fileType === 'image') {
+                    content = `<img src="${msg.text}">`;
+                } else if(msg.fileType === 'audio') {
+                    content = `<audio src="${msg.text}" controls></audio>`;
+                }
+
+                line.innerHTML = `<div class="bubble">${content}</div>`;
+                chatMessages.appendChild(line);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        });
+
+        // 6. ŞƏKİL GÖNDƏRMƏK (Base64 formatında)
+        imgFileInput.onchange = function() {
+            const file = this.files[0];
+            if (file && currentChatTarget) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    socket.emit('private_message', { to: currentChatTarget, text: e.target.result, fileType: 'image' });
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        // 7. SƏS YAZMAQLA GÖNDƏRMƏK
+        audioRecBtn.onclick = () => {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            socket.emit('private_message', { to: currentChatTarget, text: e.target.result, fileType: 'audio' });
+                        };
+                        reader.readAsDataURL(audioBlob);
+                        audioRecBtn.style.color = "#fff";
+                    };
+                    mediaRecorder.start();
+                    audioRecBtn.style.color = "red"; // Yazır mənasına gəlsin
+                }).catch(err => alert("Mikrofona icazə verilmədi, brat."));
+            } else {
+                mediaRecorder.stop();
+            }
+        };
+
+        // 8. PROFİL ŞƏKLİNİ YÜKLƏMƏK
+        document.getElementById("avatar-upload").onchange = function() {
+            const file = this.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    socket.emit('update_avatar', e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        socket.on('avatar_updated', (img) => {
+            document.getElementById("my-profile-img").src = img;
+            alert("Profil şəklin yeniləndi, brat!");
+        });
+    </script>
+</body>
+</html>
